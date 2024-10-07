@@ -48,7 +48,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     lsof net-tools ninja-build pciutils \
     software-properties-common tar \
     unzip vim xz-utils libunwind-dev \
-    libzstd-dev
+    libzstd-dev libyaml-cpp-dev \
 
 # Install Python dependencies
 RUN python3 -m pip install -U Jinja2 typeguard
@@ -93,28 +93,40 @@ RUN git clone --single-branch -b development https://github.com/o3de/o3de-extras
     && git lfs pull
 # ####  Install Open 3D Engine   ####  
 
+ENV COLCON_WS_DIR=${HOME_DIR}/colcon_ws
 
 # Recreate the source directory for debugging later on
-# RUN mkdir ${SPACEROS_DIR}/src \
-#   && vcs import ${SPACEROS_DIR}/src < ${SPACEROS_DIR}/exact.repos
+# SPACEROS_DIR has the install folder, we don't need it anymore
+WORKDIR ${SPACEROS_DIR}
+RUN mkdir ${SPACEROS_DIR}/src \
+  && vcs import ${SPACEROS_DIR}/src < ${SPACEROS_DIR}/exact.repos
 
-# WORKDIR ${SPACEROS_DIR}
+RUN mkdir -p ${COLCON_WS_DIR}/src
+WORKDIR ${COLCON_WS_DIR}
+COPY --chown=${USERNAME}:${USERNAME} colcon_ws /tmp/
+RUN vcs import ${DEMO_DIR}/src < /tmp/colcon_ws.repos
 
-# Enable installing ROS2 Humble packages from binary
-#RUN sudo sh -c 'echo "deb http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
-#RUN sudo curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
+# Hack to fix ownership issues
+RUN sudo chown -R ${USERNAME}:${USERNAME} ${COLCON_WS_DIR}
 
 # Update rosdep
-# RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-#   --mount=type=cache,target=/var/lib/apt,sharing=locked \
-#   sudo apt-get update -y
-# RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-#   --mount=type=cache,target=/var/lib/apt,sharing=locked \
-#   sudo apt-get dist-upgrade -y
-# RUN rosdep update
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  sudo apt-get update -y
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  sudo apt-get dist-upgrade -y
+RUN rosdep update
 
-# Build the test_ws
-# TODO
+# Install system dependencies
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  /bin/bash -c 'source ${SPACEROS_DIR}/install/setup.bash' \
+ && rosdep install --from-paths ${SPACEROS_DIR}/src src --ignore-src --rosdistro ${ROSDISTRO} -r -y --skip-keys "console_bridge generate_parameter_library fastcdr fastrtps rti-connext-dds-5.3.1 urdfdom_headers rmw_connextdds ros_testing rmw_connextdds rmw_fastrtps_cpp rmw_fastrtps_dynamic_cpp composition demo_nodes_py lifecycle rosidl_typesupport_fastrtps_cpp rosidl_typesupport_fastrtps_c ikos diagnostic_aggregator diagnostic_updater joy qt_gui rqt_gui rqt_gui_py"
+
+RUN /bin/bash -c 'source ${SPACEROS_DIR}/install/setup.bash \
+  && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --event-handlers desktop_notification- status-'
+
 
 # Build the workspace
 # WORKDIR ${SPACEROS_DIR}
