@@ -43,3 +43,23 @@ repositories:
     type: git
     url: https://github.com/ros-controls/control_msgs.git
     version: humble
+  generate_parameter_library:
+    type: git
+    url: https://github.com/PickNikRobotics/generate_parameter_library.git
+    version: main
+  RSL:
+    type: git
+    url: https://github.com/PickNikRobotics/RSL.git
+    version: main
+  cpp_polyfills:
+    type: git
+    url: https://github.com/PickNikRobotics/cpp_polyfills
+    version: main
+  image_common:
+    type: git
+    url: https://github.com/ros-perception/image_common.git
+    version: humble
+  vision_opencv:
+    type: git
+    url: https://github.com/ros-perception/vision_opencv.git
+    version: humble
