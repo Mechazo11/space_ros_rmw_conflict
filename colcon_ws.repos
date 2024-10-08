@@ -30,7 +30,7 @@ repositories:
   control_toolbox:
     type: git
     url: https://github.com/ros-controls/control_toolbox.git
-    version: master
+    version: ros2-master
   filters:
     type: git
     url: https://github.com/ros/filters.git
@@ -39,3 +39,7 @@ repositories:
     type: git
     url: https://github.com/ros-controls/realtime_tools.git
     version: master
+  control_msgs:
+    type: git
+    url: https://github.com/ros-controls/control_msgs.git
+    version: humble
