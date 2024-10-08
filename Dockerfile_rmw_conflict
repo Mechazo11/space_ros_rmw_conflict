@@ -127,26 +127,34 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   /bin/bash -c 'source ${SPACEROS_DIR}/install/setup.bash' \
  && rosdep install --from-paths ${SPACEROS_DIR}/src src --ignore-src --rosdistro ${ROSDISTRO} -r -y --skip-keys "console_bridge generate_parameter_library fastcdr fastrtps rti-connext-dds-5.3.1 urdfdom_headers rmw_connextdds ros_testing rmw_connextdds rmw_fastrtps_cpp rmw_fastrtps_dynamic_cpp composition demo_nodes_py lifecycle rosidl_typesupport_fastrtps_cpp rosidl_typesupport_fastrtps_c ikos diagnostic_aggregator diagnostic_updater joy qt_gui rqt_gui rqt_gui_py"
 
-# RUN /bin/bash -c 'source ${SPACEROS_DIR}/install/setup.bash \
-#   && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --event-handlers desktop_notification- status-'
+# Build the colcon_ws
+RUN /bin/bash -c 'source ${SPACEROS_DIR}/install/setup.bash \
+  && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --event-handlers desktop_notification- status-'
 
+# Ensure any and all ros2-{ROSDISTRO} packages gets taken out
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    sudo apt-get purge 'ros-humble*' -y \
+    && sudo apt-get autoremove -y \
+    && sudo apt-get clean
 
 # Register the project and Gems after ensuring Space ROS workspace was built correctly.
-# WORKDIR ${HOME_DIR}/o3de
-# RUN ./scripts/o3de.sh register --this-engine \
-#     && ./scripts/o3de.sh register --gem-path ${SPACEROS_DIR}/o3de-extras/Gems/ROS2 \
-#     && ./scripts/o3de.sh register --gem-path ${SPACEROS_DIR}/o3de-extras/Gems/RosRobotSample \
-#     && ./scripts/o3de.sh register --gem-path ${SPACEROS_DIR}/o3de-extras/Gems/WarehouseSample \
-#     && ./scripts/o3de.sh register --gem-path ${SPACEROS_DIR}/O3DE/Gems/NasaCuriosityRoverGem \
-#     && ./scripts/o3de.sh register --gem-path ${SPACEROS_DIR}/O3DE/Gems/MarsYardGem \
-#     && ./scripts/o3de.sh register --gem-path ${SPACEROS_DIR}/o3de/Gems/Terrain \
-#     && ./scripts/o3de.sh register --project-path ${SPACEROS_DIR}/O3DE/Projects/RobotSim
+WORKDIR ${HOME_DIR}/o3de
+RUN ./scripts/o3de.sh register --this-engine \
+    && ./scripts/o3de.sh register --gem-path ${HOME_DIR}/o3de-extras/Gems/ROS2 \
+    && ./scripts/o3de.sh register --gem-path ${HOME_DIR}/o3de-extras/Gems/RosRobotSample \
+    && ./scripts/o3de.sh register --gem-path ${HOME_DIR}/o3de-extras/Gems/WarehouseSample \
+    && ./scripts/o3de.sh register --gem-path ${HOME_DIR}/O3DE/Gems/NasaCuriosityRoverGem \
+    && ./scripts/o3de.sh register --gem-path ${HOME_DIR}/O3DE/Gems/MarsYardGem \
+    && ./scripts/o3de.sh register --gem-path ${HOME_DIR}/o3de/Gems/Terrain \
+    && ./scripts/o3de.sh register --project-path ${HOME_DIR}/O3DE/Projects/RobotSim
+
 
 # Set up environment and build the RobotSim project
-# WORKDIR $SPACEROS_DIR/O3DE/Projects/RobotSim
+WORKDIR ${HOME_DIR}/O3DE/Projects/RobotSim
 
-# RUN source /opt/ros/humble/setup.bash \
-#     && source $SPACEROS_DIR/install/setup.bash \
+# RUN /bin/bash -c 'source ${SPACEROS_DIR}/install/setup.bash' \
+#     && /bin/bash -c 'source ${COLCON_WS_DIR}/install/setup.bash' \
 #     && cmake -B build/linux -G "Ninja Multi-Config" -DLY_DISABLE_TEST_MODULES=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DLY_STRIP_DEBUG_SYMBOLS=ON -DAZ_USE_PHYSX5:BOOL=ON
 
 # Add the user to the render group so that the user can access /dev/dri/renderD128
